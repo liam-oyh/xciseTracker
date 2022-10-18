@@ -56,7 +56,7 @@ app.post("/api/users/:_id/exercises", async function(req, res){
   
  
   var log = {description: req.body.description,
-             duration: req.body.duration,
+             duration: Number(req.body.duration),
              date: inputDate};
 
   var userId = req.params["_id"];
@@ -65,15 +65,25 @@ app.post("/api/users/:_id/exercises", async function(req, res){
   var updateUser = await Xcise.findOneAndUpdate({_id: userId}, {$push: { log: log}, $inc: {count: 1} }, {new: true}, function(err, updateUser){
     if(err) console.log(err)
     else return updateUser});
- 
+
+  var object = {};
+  object['username'] = updateUser.username;
+  object['_id'] = updateUser.id;
+  object['description'] = log.description;
+  object['date'] = new Date(log.date).toDateString();
+  object['duration'] = log.duration;
   
+  
+
   
   return res.status(200)
-            .send({"username":updateUser.username,
+            .json({"username":updateUser.username,
+                   "_id":updateUser["_id"],  
                    "description":log.description,
-                   "duration":log.duration,
                    "date": new Date(log.date).toDateString(),
-                   "_id":updateUser["_id"],                                                     })
+                   "duration":log.duration
+                   
+                                                                     })
                  
 })
 

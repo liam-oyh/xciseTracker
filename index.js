@@ -66,25 +66,13 @@ app.post("/api/users/:_id/exercises", async function(req, res){
     if(err) console.log(err)
     else return updateUser});
 
-  var object = {};
-  object['username'] = updateUser.username;
-  object['_id'] = updateUser.id;
-  object['description'] = log.description;
-  object['date'] = new Date(log.date).toDateString();
-  object['duration'] = log.duration;
-  
-  
-
   
   return res.status(200)
             .json({"username":updateUser.username,
                    "_id":updateUser["_id"],  
                    "description":log.description,
                    "date": new Date(log.date).toDateString(),
-                   "duration":log.duration
-                   
-                                                                     })
-                 
+                   "duration":log.duration                                           })
 })
 
 // logs api endpoint
@@ -94,24 +82,54 @@ app.get('/api/users/:_id/logs', async function(req, res){
   var toDate = req.query.to || new Date(Date.now());
 
  //console.log(`${fromDate}, ${toDate}`);
+try {
+    var logs = await Xcise.find(
+                  {$or: [{_id: req.params["_id"]},
+                        {"log.date": { $gte: fromDate , $lte: toDate }}]                            }).limit(showLimit);
+
+    var userObj = logs[0];
+    var responseObj={}
+    responseObj['username'] = userObj.username;
+    responseObj['count'] = 0;
+    responseObj['_id'] = userObj["_id"];
+    responseObj['log'] = [];
   
-  /* const logs = await Xcise.find({
-      _id: req.params["_id"],
-      "log.date": { $gte: fromDate , $lte: toDate }
-    })
-    .select({"username":1, "count":1, "_id":1, "log":1})
-    .limit(showLimit) */ 
-    
-  var logs = await Xcise.where("_id")
+  
+    if (logs[0].count > 1 & userObj.log.length > 0 ) {
+      for (let i=0; i< userObj.log.length; i++) {
+        var item = {"description": userObj["log"][i].description,
+                    "duration": userObj["log"][i].duration,
+                    "date": userObj["log"][i].date.toDateString()          
+                   };    
+        responseObj['log'].push(item);
+      
+    } 
+    responseObj['count'] = userObj.log.length
+
+  }
+
+    return res.status(200).json(responseObj);
+  /* var logs = await Xcise.where("_id")
                   .eq(req.params["_id"])
                   .where("log.date")
                   .gte(fromDate)
                   .lte(toDate)
-                  .select({"username":1, "count":1, "_id":1, "log":1})
-                  .limit(showLimit);
+                  .select({"username":1, "count":1, "_id":1, "log.description":1, "log.duration":1, "log.date":1})
+                  .limit(showLimit); */
+
+ 
+
+  //console.log(userObj);
+  } catch (error) {
+    console.log(error);
+    //return res.send("[]");
+  }
+})  
   
-  return res.status(200).send(logs)
-})
+  
+    
+  
+
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {

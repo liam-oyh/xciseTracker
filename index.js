@@ -22,7 +22,7 @@ var urlShort = mongoose.connect(myURI, { UseNewUrlParser: true, UseUnifiedTopolo
 const xciseSchema = new mongoose.Schema(
   {
   username: {type: String, required: true},
-  count: {type: Number, default:0},
+  /* count: {type: Number, default:0}, */
   log: [{description: String,
          duration: Number,
          date: Date}],
@@ -62,9 +62,13 @@ app.post("/api/users/:_id/exercises", async function(req, res){
   var userId = req.params["_id"];
 
 // update the excercise log  
-  var updateUser = await Xcise.findOneAndUpdate({_id: userId}, {$push: { log: log}, $inc: {count: 1} }, {new: true}, function(err, updateUser){
+  var updateUser = await Xcise.findOne({_id: userId});
+  await updateUser.log.push(log);
+  await updateUser.save();
+  updateUser = await Xcise.findOne({_id: userId});
+  /* var updateUser = await Xcise.findOneAndUpdate({_id: userId}, {$push: { log: log} , $inc: {count: 1} }, {new: true},  function(err, updateUser){
     if(err) console.log(err)
-    else return updateUser});
+    else return updateUser}); */
 
   
   var response = {"username": updateUser.username,

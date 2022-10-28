@@ -89,6 +89,7 @@ app.get('/api/users/:_id/logs', async function(req, res){
   var fromDate = req.query.from || new Date(0);
   var toDate = req.query.to || new Date(Date.now());
 
+  console.log(showLimit);
   console.log(`${fromDate}, ${toDate}`);
   fromDate = new Date(fromDate);
   toDate = new Date(toDate);
@@ -114,44 +115,47 @@ try {
     
 
     
-    //console.log(logs);
-    //console.log(logs.length)
+   
+
   
     
       var userObj = logs[0];
-      //console.log(userObj)
+     
       
       responseObj['username'] = userObj.username;
-      responseObj['count'] = userObj.log.length;
       responseObj['_id'] = userObj["_id"];
       responseObj['log'] = [];
     
       
-      //console.log(userObj.log.length);
       
-      if (userObj.log.length > 0 ) {
+      
+      if (!showLimit | userObj.log.length <= showLimit) {
         for (let i=0; i< userObj.log.length; i++) {
           var item = {"description": userObj["log"][i].description,
                       "duration": userObj["log"][i].duration,
                       "date": userObj["log"][i].date.toDateString()          
                      };    
           responseObj['log'].push(item);
-      
-      } 
-      //responseObj['count'] = userObj.log.length
-
-    }
+        }
+      } else {
+        for (let i=0; i< showLimit; i++) {
+          var item = {"description": userObj["log"][i].description,
+                      "duration": userObj["log"][i].duration,
+                      "date": userObj["log"][i].date.toDateString()          
+                     };    
+          responseObj['log'].push(item);
+         }
+      }
+    responseObj['count'] = responseObj.log.length;
     console.log(responseObj);
     return res.status(200).json(responseObj); 
-      
-  
-}
+  }
   
 
-  //console.log(userObj);
+ 
   } catch (error) {
     console.log(error);
-    //return res.send("[]");
+   
   }
 })  
   

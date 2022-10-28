@@ -51,8 +51,8 @@ app.get("/api/users", async (req,res) =>
 // Create a user
 app.post("/api/users/:_id/exercises", async function(req, res){
   var inputDate;
-  if (req.body.date === "") inputDate = new Date(Date.now())
-  else inputDate = req.body.date;    
+  if (req.body.date === "" | isNaN(new Date(req.body.date)) === true) inputDate = new Date(Date.now())
+  else inputDate = new Date(req.body.date);    
   
  
   var log = {description: req.body.description,
@@ -60,19 +60,23 @@ app.post("/api/users/:_id/exercises", async function(req, res){
              date: inputDate};
 
   var userId = req.params["_id"];
-  
-// update the excercise info.  
+
+// update the excercise log  
   var updateUser = await Xcise.findOneAndUpdate({_id: userId}, {$push: { log: log}, $inc: {count: 1} }, {new: true}, function(err, updateUser){
     if(err) console.log(err)
     else return updateUser});
 
   
+  var response = {"username": updateUser.username,
+                   "description": log.description,
+                   "date": log.date.toDateString(),
+                   "duration": log.duration,
+                  "_id": updateUser["_id"]}
+  //console.log(response);
   return res.status(200)
-            .json({"username":updateUser.username,
-                   "_id":updateUser["_id"],  
-                   "description":log.description,
-                   "date": new Date(log.date).toDateString(),
-                   "duration":log.duration                                           })
+            .json(response);
+
+
 })
 
 // logs api endpoint
@@ -81,43 +85,64 @@ app.get('/api/users/:_id/logs', async function(req, res){
   var fromDate = req.query.from || new Date(0);
   var toDate = req.query.to || new Date(Date.now());
 
- //console.log(`${fromDate}, ${toDate}`);
-try {
-    var logs = await Xcise.find(
-                  {$or: [{_id: req.params["_id"]},
-                        {"log.date": { $gte: fromDate , $lte: toDate }}]                            }).limit(showLimit);
-
-    var userObj = logs[0];
-    var responseObj={}
-    responseObj['username'] = userObj.username;
-    responseObj['count'] = 0;
-    responseObj['_id'] = userObj["_id"];
-    responseObj['log'] = [];
-  
-  
-    if (logs[0].count > 1 & userObj.log.length > 0 ) {
-      for (let i=0; i< userObj.log.length; i++) {
-        var item = {"description": userObj["log"][i].description,
-                    "duration": userObj["log"][i].duration,
-                    "date": userObj["log"][i].date.toDateString()          
-                   };    
-        responseObj['log'].push(item);
-      
-    } 
-    responseObj['count'] = userObj.log.length
-
-  }
-
-    return res.status(200).json(responseObj);
-  /* var logs = await Xcise.where("_id")
-                  .eq(req.params["_id"])
-                  .where("log.date")
-                  .gte(fromDate)
-                  .lte(toDate)
-                  .select({"username":1, "count":1, "_id":1, "log.description":1, "log.duration":1, "log.date":1})
-                  .limit(showLimit); */
-
+  console.log(`${fromDate}, ${toDate}`);
+  fromDate = new Date(fromDate);
+  toDate = new Date(toDate);
+ console.log(`${fromDate}, ${toDate}`);
+  console.log(req.params["_id"]);
  
+  
+try {
+  var logs = await Xcise.findById(req.params["_id"]) 
+  var responseObj={};
+  if (logs.length === 0) return res.send(responseObj)
+  else{
+       logs = await Xcise.where("_id")
+                         .eq(req.params["_id"])
+                         .where("log.date")
+                         .gte(fromDate)
+                         .lte(toDate)
+                         .limit(showLimit);  
+      /* logs = await Xcise.find(
+                              {"_id": req.params["_id"],
+                               "log.date": { $gte: fromDate , $lte: toDate }            
+                              }).limit(showLimit); */
+    
+
+    
+    //console.log(logs);
+    //console.log(logs.length)
+  
+    
+      var userObj = logs[0];
+      //console.log(userObj)
+      
+      responseObj['username'] = userObj.username;
+      responseObj['count'] = userObj.log.length;
+      responseObj['_id'] = userObj["_id"];
+      responseObj['log'] = [];
+    
+      
+      //console.log(userObj.log.length);
+      
+      if (userObj.log.length > 0 ) {
+        for (let i=0; i< userObj.log.length; i++) {
+          var item = {"description": userObj["log"][i].description,
+                      "duration": userObj["log"][i].duration,
+                      "date": userObj["log"][i].date.toDateString()          
+                     };    
+          responseObj['log'].push(item);
+      
+      } 
+      //responseObj['count'] = userObj.log.length
+
+    }
+    console.log(responseObj);
+    return res.status(200).json(responseObj); 
+      
+  
+}
+  
 
   //console.log(userObj);
   } catch (error) {
